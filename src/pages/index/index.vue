@@ -3,16 +3,20 @@
     <view class="dice-wrap">
       <view
         class="dice"
-        v-for="(item, index) in diceList"
+        v-for="(item, index) in count"
         :key="index"
-        :class="[diceClass[item.figure - 1]]"
+        :class="[
+          diceClass[diceList[item].figure - 1],
+          diceList.length || 'hide',
+        ]"
         :style="{
-          left: `${item.x}Px`,
-          top: `${item.y}Px`,
-          '--figure': item.figure,
+          left: `${diceList[item].x || -width}Px`,
+          top: `${diceList[item].y || -width}Px`,
         }"
+        @click="handlerEvenTap(item)"
       >
-        <view v-for="num in item.figure" :key="num" class="dot"> </view>
+        <view v-for="num in diceList[item].figure" :key="num" class="dot">
+        </view>
       </view>
     </view>
     <view class="control">
@@ -60,13 +64,15 @@ interface stateTs {
   isAudioPlay: boolean
   timer: null | number
   disableSound: boolean
+  tapCount: number
+  tapTimer: null | number
 }
 import { defineComponent, onMounted, reactive, toRefs, watch } from 'vue'
 export default defineComponent({
   setup() {
     const state: stateTs = reactive({
-      width: 50, // 骰子宽度
-      height: 50, // 骰子高度
+      width: 60, // 骰子宽度
+      height: 60, // 骰子高度
       offset: 10, // 骰子之间的间距
       count: 5, // 骰子数量
       maxCount: 6,
@@ -78,6 +84,8 @@ export default defineComponent({
       isAudioPlay: false,
       timer: null,
       disableSound: false,
+      tapCount: 0,
+      tapTimer: null,
     })
     onMounted(() => {
       methods.initAudio()
@@ -190,6 +198,23 @@ export default defineComponent({
           state.count -= 1
         }
       },
+      // 连点判断
+      handlerEvenTap(index: number) {
+        state.tapCount += 1 // 每次点击 + 1
+        // 重置延时器
+        if (state.tapTimer) clearTimeout(state.tapTimer)
+        // 连点次数大于等于8 改变筛子点数
+        if (state.tapCount >= 8) {
+          const figure = state.diceList[index].figure + 1
+          state.diceList[index].figure = figure > 6 ? 1 : figure
+          state.tapCount = 0
+        } else {
+          // 没有大于等于8 400毫秒重置点击次数 重新计数
+          state.tapTimer = setTimeout(() => {
+            state.tapCount = 0
+          }, 400)
+        }
+      },
     }
     return {
       ...toRefs(state),
@@ -233,12 +258,17 @@ export default defineComponent({
   .dice-wrap {
     position: relative;
     flex: 1;
-    transition: all 1s;
+  }
+  .hide {
+    visibility: hidden;
   }
   .dice {
+    transition-property: left, top;
+    transition-duration: 0.75s;
+    transition-timing-function: cubic-bezier(0.01, 0.79, 0.38, 1);
     position: absolute;
-    width: 100rpx;
-    height: 100rpx;
+    width: 120rpx;
+    height: 120rpx;
     // border: 1rpx solid red;
     border-radius: 15rpx;
     box-shadow: 0 0 16rpx #888888 inset;
@@ -247,8 +277,8 @@ export default defineComponent({
     box-sizing: border-box;
     background: #fff;
     .dot {
-      width: 15rpx;
-      height: 15rpx;
+      width: 20rpx;
+      height: 20rpx;
       border-radius: 50%;
       background: rgb(16, 50, 241);
     }
