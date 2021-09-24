@@ -1,6 +1,7 @@
 {
     "name": "dice_uni_app",
-    "appid": "",
+    "cloudfunctionRoot": "cloud/",
+    "appid": "wx59b60835aefd17e4",
     "description": "",
     "versionName": "1.0.0",
     "versionCode": "100",
