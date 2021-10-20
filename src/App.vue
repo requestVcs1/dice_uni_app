@@ -1,6 +1,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
-export default defineComponent({})
+export default defineComponent({
+  setup() {
+    uni.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    })
+  },
+})
 </script>
 <style lang="scss">
 @import './static/iconfont.css';

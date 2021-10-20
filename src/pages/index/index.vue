@@ -92,7 +92,8 @@ export default defineComponent({
       uni.getSystemInfo({
         success(info) {
           state.w = info.windowWidth
-          state.h = info.windowHeight - 300
+          // 34 = 下方控制bar高度
+          state.h = info.windowHeight - 34
           methods.initDice()
         },
       })
@@ -106,6 +107,21 @@ export default defineComponent({
     const methods = {
       // 初始化
       initDice() {
+        const count = state.count
+        const x = state.w / 2 - state.width / 2
+        const maxCount = Math.floor(state.h / state.height)
+        const step = ((maxCount - count) * 60) / count
+        const defaultY = 60
+        for (let i = 0; i < count; i++) {
+          const y = i * (defaultY + step)
+          state.diceList.push({
+            x,
+            y: y ? y : 1,
+            figure: 1,
+          })
+        }
+      },
+      swing() {
         const count = state.count
         for (let i = 0; i < count; i++) {
           this.overlayHandler()
@@ -170,7 +186,7 @@ export default defineComponent({
         }
         if (state.timer) clearTimeout(state.timer)
         state.timer = setTimeout(() => {
-          methods.initDice()
+          methods.swing()
         }, 500)
       },
       handlerClear() {
