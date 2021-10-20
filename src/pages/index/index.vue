@@ -89,14 +89,15 @@ export default defineComponent({
     })
     onMounted(() => {
       methods.initAudio()
-      uni.getSystemInfo({
-        success(info) {
-          state.w = info.windowWidth
-          // 34 = 下方控制bar高度
-          state.h = info.windowHeight - 34
+      uni
+        .createSelectorQuery()
+        .select('.dice-wrap')
+        .boundingClientRect((rect) => {
+          state.w = rect.width || 0
+          state.h = rect.height || 0
           methods.initDice()
-        },
-      })
+        })
+        .exec()
     })
     watch(
       () => state.count,
@@ -156,8 +157,8 @@ export default defineComponent({
       },
       // 触碰/叠加判断
       overlayHandler() {
-        const x = this.randomNumber(10, state.w - 60)
-        const y = this.randomNumber(10, state.h - 60)
+        const x = this.randomNumber(10, state.w - 70)
+        const y = this.randomNumber(10, state.h - 100)
         const figure = this.randomNumber(1, 6)
         const r = state.offset + state.width
         const result = state.diceList.some(({ x: Dx, y: Dy }) => {
