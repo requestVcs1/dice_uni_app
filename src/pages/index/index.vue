@@ -5,18 +5,21 @@
         class="dice"
         v-for="(item, index) in count"
         :key="index"
-        :class="[
-          diceClass[diceList[item].figure - 1],
-          diceList.length || 'hide',
-        ]"
+        :class="[diceClass[diceList[item].figure - 1], diceList.length || 'hide']"
         :style="{
           left: `${diceList[item].x || -width}Px`,
           top: `${diceList[item].y || -width}Px`,
         }"
         @click="handlerEvenTap(item)"
       >
-        <view v-for="num in diceList[item].figure" :key="num" class="dot">
+        <view v-for="num in diceList[item].figure" :key="num" class="dot"> </view>
+      </view>
+      <view class="shake-svg" @click="shake = !shake">
+        <view>
+          <img v-show="!shake" src="@/static/shake.svg" />
+          <img v-show="shake" src="@/static/shake_.svg" />
         </view>
+        {{ !shake ? '开启' : '关闭' }}摇一摇
       </view>
     </view>
     <view class="control">
@@ -66,6 +69,10 @@ interface stateTs {
   disableSound: boolean
   tapCount: number
   tapTimer: null | number
+  numX: number
+  numY: number
+  numZ: number
+  shake: boolean
 }
 import { defineComponent, onMounted, reactive, toRefs, watch } from 'vue'
 export default defineComponent({
@@ -86,13 +93,17 @@ export default defineComponent({
       disableSound: false,
       tapCount: 0,
       tapTimer: null,
+      numX: 1,
+      numY: 1,
+      numZ: 2,
+      shake: false,
     })
     onMounted(() => {
       methods.initAudio()
       uni
         .createSelectorQuery()
         .select('.dice-wrap')
-        .boundingClientRect((rect) => {
+        .boundingClientRect(rect => {
           state.w = rect.width || 0
           state.h = rect.height || 0
           methods.initDice()
@@ -105,6 +116,7 @@ export default defineComponent({
         methods.handlerClear()
       }
     )
+   
     const methods = {
       // 初始化
       initDice() {
@@ -181,14 +193,18 @@ export default defineComponent({
       },
       // 重置
       resetHandler() {
-        this.handlerClear()
-        if (!state.disableSound) {
-          this.audioPlay()
+        if (!state.timer) {
+          this.handlerClear()
+          setTimeout(() => {
+            if (!state.disableSound) {
+              this.audioPlay()
+            }
+            methods.swing()
+          }, 500)
+          state.timer = setTimeout(() => {
+            state.timer = null
+          }, 2000)
         }
-        if (state.timer) clearTimeout(state.timer)
-        state.timer = setTimeout(() => {
-          methods.swing()
-        }, 500)
       },
       handlerClear() {
         state.diceList.length = 0
@@ -232,7 +248,25 @@ export default defineComponent({
           }, 400)
         }
       },
+      shakeFun(res: UniApp.OnAccelerometerChangeSuccess) {
+        // 摇一摇方法封装
+        //小程序api 加速度计
+        if (state.numX < res.x || state.numY < res.y || state.numZ < res.y) {
+          methods.resetHandler()
+        }
+      },
     }
+     watch(
+      () => state.shake,
+      val => {
+        if (val) {
+          uni.onAccelerometerChange(methods.shakeFun)
+        } else {
+          uni.offAccelerometerChange(methods.shakeFun)
+        }
+      },
+      { immediate: true }
+    )
     return {
       ...toRefs(state),
       ...methods,
@@ -275,6 +309,17 @@ export default defineComponent({
   .dice-wrap {
     position: relative;
     flex: 1;
+  }
+  .shake-svg {
+    position: absolute;
+    top: 20rpx;
+    right: 20rpx;
+    color: #fff;
+    font-size: 24rpx;
+    image {
+      width: 50rpx;
+      height: 50rpx;
+    }
   }
   .hide {
     visibility: hidden;
