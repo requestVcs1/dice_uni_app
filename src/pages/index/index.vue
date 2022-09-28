@@ -23,7 +23,7 @@
       </view>
     </view>
     <view class="control">
-      <view class="icon" @click="disableSound = !disableSound">
+      <view class="icon" @click="disableSound = !disableSound" @touchstart="touchstartHandler" @touchend="touchendHandler">
         <img v-show="!disableSound" src="@/static/icon-lingdang.svg" />
         <img v-show="disableSound" src="@/static/icon-lingdang_.svg" />
       </view>
@@ -73,6 +73,7 @@ interface stateTs {
   numY: number
   numZ: number
   shake: boolean
+  version: string
 }
 import { defineComponent, onMounted, reactive, toRefs, watch } from 'vue'
 export default defineComponent({
@@ -97,13 +98,16 @@ export default defineComponent({
       numY: 1,
       numZ: 2,
       shake: false,
+      version: ''
     })
     onMounted(() => {
+      getVersion()
       methods.initAudio()
       uni
         .createSelectorQuery()
         .select('.dice-wrap')
         .boundingClientRect(rect => {
+           /* tslint:disable */ 
           state.w = rect.width || 0
           state.h = rect.height || 0
           methods.initDice()
@@ -267,9 +271,36 @@ export default defineComponent({
       },
       { immediate: true }
     )
+    function getVersion() {
+      if (__wxConfig?.envVersion) {
+        console.log('__wxConfig使用', __wxConfig)
+        state.version = __wxConfig?.envVersion
+        return
+      }
+      if (uni.canIUse('getAccountInfoSync')) {
+        console.log('getAccountInfoSync使用', JSON.stringify(uni.getAccountInfoSync(), null , 2))
+        state.version =  uni.getAccountInfoSync()?.miniProgram?.envVersion ?? '1.0.0'
+        return
+      }
+    }
+    let startTime = 0
+    function touchstartHandler() {
+      startTime = new Date().getTime()
+    }
+    function touchendHandler() {
+      let endTime = new Date().getTime()
+      if (endTime - startTime >= 4000) {
+        uni.showToast({
+          title: state.version
+        })
+      }
+    }
     return {
       ...toRefs(state),
       ...methods,
+      getVersion,
+      touchstartHandler,
+      touchendHandler
     }
   },
 })
